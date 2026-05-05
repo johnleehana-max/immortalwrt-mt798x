@@ -1,0 +1,32 @@
+name: Build ImmortalWrt for TX-AX6000
+
+on:
+  workflow_dispatch: # 수동으로 빌드 버튼을 누를 때 실행
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Initialization environment
+        run: |
+          sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.eu.org/init_build_environment.sh)'
+
+      - name: Download feeds & config
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cp -f defconfig/mt7986-ax6000.config .config # TX-AX6000용 설정 적용
+
+      - name: Build firmware
+        run: |
+          make defconfig
+          make -j$(nproc) || make -j1 V=s
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ImmortalWrt_TX-AX6000
+          path: bin/targets/mediatek/mt7986/*.bin
